@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Запись клиентов на процедуры</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f8fb;
+            margin: 0;
+            padding: 20px;
+            max-width: 900px;
+            margin: auto;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4a4a8a;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        input, select, button {
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #4a4a8a;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #3a3a6a;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4a4a8a;
+            color: white;
+        }
+
+        .export-btn {
+            background-color: #1e8b57;
+            margin-top: 10px;
+        }
+
+        .export-btn:hover {
+            background-color: #156c42;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Онлайн-запись клиентов</h1>
+
+    <div class="card">
+        <h2>Добавить клиента</h2>
+        <input type="text" id="clientName" placeholder="Имя клиента">
+        <input type="text" id="clientPhone" placeholder="Телефон">
+        <button onclick="addClient()">Сохранить клиента</button>
+    </div>
+
+    <div class="card">
+        <h2>Записать на процедуру</h2>
+        <select id="selectClient"></select>
+        <input type="date" id="procedureDate">
+        <input type="time" id="procedureTime">
+        <input type="text" id="procedureType" placeholder="Процедура (например, массаж)">
+        <button onclick="addAppointment()">Сохранить запись</button>
+    </div>
+
+    <div class="card">
+        <h2>Записи</h2>
+        <table id="appointmentsTable">
+            <thead>
+                <tr><th>Клиент</th><th>Дата</th><th>Время</th><th>Процедура</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <button class="export-btn" onclick="exportToExcel()">Экспорт в Excel (CSV)</button>
+    </div>
+
+    <script>
+        let clients = JSON.parse(localStorage.getItem('clients')) || [];
+        let appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+
+        function saveData() {
+            localStorage.setItem('clients', JSON.stringify(clients));
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+        }
+
+        function addClient() {
+            const name = document.getElementById('clientName').value.trim();
+            const phone = document.getElementById('clientPhone').value.trim();
+            if (name && phone) {
+                clients.push({ name, phone });
+                saveData();
+                renderClientSelect();
+                document.getElementById('clientName').value = '';
+                document.getElementById('clientPhone').value = '';
+            }
+        }
+
+        function addAppointment() {
+            const clientIndex = document.getElementById('selectClient').value;
+            const date = document.getElementById('procedureDate').value;
+            const time = document.getElementById('procedureTime').value;
+            const type = document.getElementById('procedureType').value.trim();
+
+            if (clientIndex !== '' && date && time && type) {
+                const client = clients[clientIndex];
+                appointments.push({
+                    clientName: client.name,
+                    date, time, type
+                });
+                saveData();
+                renderAppointments();
+                document.getElementById('procedureDate').value = '';
+                document.getElementById('procedureTime').value = '';
+                document.getElementById('procedureType').value = '';
+            }
+        }
+
+        function renderClientSelect() {
+            const select = document.getElementById('selectClient');
+            select.innerHTML = '<option value="">Выберите клиента</option>';
+            clients.forEach((client, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${client.name} (${client.phone})`;
+                select.appendChild(option);
+            });
+        }
+
+        function renderAppointments() {
+            const table = document.getElementById('appointmentsTable').querySelector('tbody');
+            table.innerHTML = '';
+            appointments.forEach(a => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${a.clientName}</td><td>${a.date}</td><td>${a.time}</td><td>${a.type}</td>`;
+                table.appendChild(row);
+            });
+        }
+
+        function exportToExcel() {
+            let csv = "Клиент,Дата,Время,Процедура\n";
+            appointments.forEach(a => {
+                csv += `"${a.clientName}","${a.date}","${a.time}","${a.type}"\n`;
+            });
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "zapisi.csv";
+            link.click();
+        }
+
+        renderClientSelect();
+        renderAppointments();
+    </script>
+
+</body>
+</html>
